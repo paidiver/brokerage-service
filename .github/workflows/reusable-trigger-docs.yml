@@ -1,0 +1,35 @@
+name: Reusable documentation rebuild request
+
+on:
+  workflow_call:
+    secrets:
+      docs_dispatch_token:
+        description: Token with Contents write access to paidiver/brokerage-service
+        required: true
+
+jobs:
+  dispatch:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Request documentation rebuild
+        env:
+          GH_TOKEN: ${{ secrets.docs_dispatch_token }}
+          SOURCE_REPOSITORY: ${{ github.repository }}
+          SOURCE_REF: ${{ github.ref }}
+          SOURCE_SHA: ${{ github.sha }}
+        run: |
+          payload=$(jq -n \
+            --arg repository "$SOURCE_REPOSITORY" \
+            --arg ref "$SOURCE_REF" \
+            --arg sha "$SOURCE_SHA" \
+            '{event_type:"source-docs-updated",client_payload:{repository:$repository,ref:$ref,sha:$sha}}')
+
+          curl --fail-with-body --silent --show-error \
+            --request POST \
+            --header "Accept: application/vnd.github+json" \
+            --header "Authorization: Bearer $GH_TOKEN" \
+            --header "X-GitHub-Api-Version: 2022-11-28" \
+            https://api.github.com/repos/paidiver/brokerage-service/dispatches \
+            --data "$payload"

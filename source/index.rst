@@ -14,7 +14,6 @@ connecting services in the Paidiver image-annotation ecosystem.
    local-deployment
    data-ingestion
    register-source
-   reusable-ci
 
 .. toctree::
    :caption: Related repositories

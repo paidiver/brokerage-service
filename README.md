@@ -19,7 +19,6 @@ The hand-written guides cover:
 * Local deployment of WoRMS Cache and an independently managed Annotations API.
 * Taxonomy, imagery, and annotation ingestion.
 * Registering a new Annotations API as a brokerage source.
-* Reusing the shared GitHub Actions workflows.
 
 ## Build locally
 
