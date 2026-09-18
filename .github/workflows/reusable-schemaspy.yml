@@ -1,0 +1,131 @@
+name: Reusable SchemaSpy documentation
+
+on:
+  workflow_call:
+    inputs:
+      compose_file:
+        required: false
+        default: docker/docker-compose.yml
+        type: string
+      database_service:
+        required: true
+        type: string
+      application_service:
+        required: true
+        type: string
+      database_name:
+        required: true
+        type: string
+      database_host:
+        required: true
+        type: string
+      excluded_tables:
+        description: SchemaSpy regular expression for tables to exclude
+        required: false
+        default: ""
+        type: string
+      extra_env:
+        description: Additional lines to append to the generated .env file
+        required: false
+        default: ""
+        type: string
+
+jobs:
+  generate:
+    name: Generate and publish database documentation
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Create environment file
+        env:
+          DATABASE_NAME: ${{ inputs.database_name }}
+          DATABASE_HOST: ${{ inputs.database_host }}
+          EXTRA_ENV: ${{ inputs.extra_env }}
+        run: |
+          {
+            echo "POSTGRES_USER=myuser"
+            echo "POSTGRES_PASSWORD=mypassword"
+            echo "POSTGRES_DB=$DATABASE_NAME"
+            echo "POSTGRES_HOST=$DATABASE_HOST"
+            echo "POSTGRES_PORT=5432"
+            if [[ -n "$EXTRA_ENV" ]]; then
+              printf '%s\n' "$EXTRA_ENV"
+            fi
+          } > .env
+
+      - name: Start PostgreSQL
+        env:
+          COMPOSE_FILE: ${{ inputs.compose_file }}
+          DATABASE_SERVICE: ${{ inputs.database_service }}
+        run: |
+          docker network create shared_services || true
+          docker compose -f "$COMPOSE_FILE" up -d "$DATABASE_SERVICE"
+
+      - name: Wait for PostgreSQL
+        env:
+          COMPOSE_FILE: ${{ inputs.compose_file }}
+          DATABASE_SERVICE: ${{ inputs.database_service }}
+          DATABASE_NAME: ${{ inputs.database_name }}
+        run: |
+          for i in {1..60}; do
+            docker compose -f "$COMPOSE_FILE" exec -T "$DATABASE_SERVICE" \
+              pg_isready -U myuser -d "$DATABASE_NAME" && exit 0
+            sleep 2
+          done
+          echo "PostgreSQL did not become ready"
+          exit 1
+
+      - name: Run Django migrations
+        env:
+          COMPOSE_FILE: ${{ inputs.compose_file }}
+          APPLICATION_SERVICE: ${{ inputs.application_service }}
+        run: >-
+          docker compose -f "$COMPOSE_FILE" run --rm "$APPLICATION_SERVICE"
+          python manage.py migrate
+
+      - name: Generate SchemaSpy documentation
+        env:
+          DATABASE_HOST: ${{ inputs.database_host }}
+          DATABASE_NAME: ${{ inputs.database_name }}
+          EXCLUDED_TABLES: ${{ inputs.excluded_tables }}
+        run: |
+          mkdir -p schemaspy-output
+          chmod -R a+rwx schemaspy-output
+          curl -L https://jdbc.postgresql.org/download/postgresql-42.5.4.jar -o jdbc-driver.jar
+          args=()
+          if [[ -n "$EXCLUDED_TABLES" ]]; then
+            args=(-I "$EXCLUDED_TABLES")
+          fi
+          docker run --rm \
+            --network=shared_services \
+            -v "${PWD}/schemaspy-output:/output" \
+            -v "${PWD}/jdbc-driver.jar:/drivers/jdbc-driver.jar" \
+            schemaspy/schemaspy:latest \
+            -t pgsql11 -dp /drivers/jdbc-driver.jar \
+            -db "$DATABASE_NAME" -host "$DATABASE_HOST" -port 5432 \
+            -u myuser -p mypassword "${args[@]}"
+
+      - name: Export schema SQL
+        env:
+          COMPOSE_FILE: ${{ inputs.compose_file }}
+          DATABASE_SERVICE: ${{ inputs.database_service }}
+          DATABASE_NAME: ${{ inputs.database_name }}
+        run: |
+          docker compose -f "$COMPOSE_FILE" exec -T \
+            -e PGPASSWORD=mypassword "$DATABASE_SERVICE" \
+            pg_dump -U myuser -d "$DATABASE_NAME" \
+              --schema-only --no-owner --no-privileges \
+            > schemaspy-output/schema.sql
+
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./schemaspy-output
+          destination_dir: database
+          publish_branch: gh-pages
+          keep_files: true

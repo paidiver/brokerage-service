@@ -1,0 +1,64 @@
+name: Reusable Docker build and push
+
+on:
+  workflow_call:
+    inputs:
+      dockerfile:
+        description: Path to the Dockerfile
+        required: false
+        default: docker/Dockerfile
+        type: string
+      context:
+        description: Docker build context
+        required: false
+        default: .
+        type: string
+      tag_prefix:
+        description: Prefix to remove from a Git tag before tagging the image
+        required: false
+        default: ""
+        type: string
+
+jobs:
+  push:
+    name: Build and push Docker image
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Select image tag
+        id: image
+        env:
+          TAG_PREFIX: ${{ inputs.tag_prefix }}
+        run: |
+          if [[ "$GITHUB_REF_TYPE" == "tag" ]]; then
+            image_tag="${GITHUB_REF_NAME#"$TAG_PREFIX"}"
+          else
+            image_tag="latest"
+          fi
+          echo "tag=$image_tag" >> "$GITHUB_OUTPUT"
+
+      - name: Build Docker image
+        run: >-
+          docker build
+          -t "ghcr.io/${{ github.repository }}:${{ github.sha }}"
+          -f "${{ inputs.dockerfile }}"
+          "${{ inputs.context }}"
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Push Docker image
+        run: |
+          image="ghcr.io/${{ github.repository }}"
+          docker tag "$image:${{ github.sha }}" "$image:${{ steps.image.outputs.tag }}"
+          docker push "$image:${{ steps.image.outputs.tag }}"
+          docker push "$image:${{ github.sha }}"

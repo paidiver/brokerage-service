@@ -1,0 +1,60 @@
+name: Reusable Helm lint
+
+on:
+  workflow_call:
+    inputs:
+      chart_dirs:
+        description: Directory containing Helm charts
+        required: false
+        default: charts
+        type: string
+      only_changed:
+        description: Skip lint when chart-testing finds no changed charts
+        required: false
+        default: true
+        type: boolean
+
+jobs:
+  lint:
+    name: Lint Helm charts
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Install Helm
+        uses: azure/setup-helm@v4.3.1
+
+      - name: Set up Python
+        uses: actions/setup-python@v6.0.0
+        with:
+          python-version: "3.x"
+          check-latest: true
+
+      - name: Add dependency repositories
+        run: helm repo add bitnami https://charts.bitnami.com/bitnami
+
+      - name: Set up chart-testing
+        uses: helm/chart-testing-action@v2.8.0
+
+      - name: Find changed charts
+        id: changed
+        env:
+          CHART_DIRS: ${{ inputs.chart_dirs }}
+          TARGET_BRANCH: ${{ github.event.repository.default_branch }}
+        run: |
+          changed=$(ct list-changed --chart-dirs "$CHART_DIRS" --target-branch "$TARGET_BRANCH")
+          if [[ -n "$changed" ]]; then
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Lint charts
+        if: ${{ !inputs.only_changed || steps.changed.outputs.changed == 'true' }}
+        env:
+          CHART_DIRS: ${{ inputs.chart_dirs }}
+          TARGET_BRANCH: ${{ github.event.repository.default_branch }}
+        run: ct lint --chart-dirs "$CHART_DIRS" --target-branch "$TARGET_BRANCH"

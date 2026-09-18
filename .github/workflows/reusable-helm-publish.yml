@@ -1,0 +1,80 @@
+name: Reusable Helm release
+
+on:
+  workflow_call:
+    inputs:
+      chart_file:
+        description: Path to the chart's Chart.yaml
+        required: true
+        type: string
+      charts_dir:
+        description: Directory containing Helm charts
+        required: false
+        default: charts
+        type: string
+      tag_prefix:
+        description: Prefix to remove from the Git tag to obtain the chart version
+        required: false
+        default: v
+        type: string
+      release_name_template:
+        description: chart-releaser release name template
+        required: false
+        default: "{{ .Name }}-{{ .Version }}"
+        type: string
+
+jobs:
+  release:
+    name: Release Helm charts
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Configure Git
+        run: |
+          git config user.name "$GITHUB_ACTOR"
+          git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
+
+      - name: Install Helm
+        uses: azure/setup-helm@v4.3.1
+
+      - name: Add dependency repositories
+        run: helm repo add bitnami https://charts.bitnami.com/bitnami
+
+      - name: Install yq
+        run: |
+          wget https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64 -O yq
+          chmod +x yq
+
+      - name: Extract and validate version
+        id: version
+        env:
+          TAG_PREFIX: ${{ inputs.tag_prefix }}
+        run: |
+          version="${GITHUB_REF_NAME#"$TAG_PREFIX"}"
+          if ! [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-.*)?$ ]]; then
+            echo "Tag does not contain a valid semantic version: $version"
+            exit 1
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      - name: Update chart version
+        env:
+          CHART_FILE: ${{ inputs.chart_file }}
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          ./yq -i '.version = strenv(VERSION)' "$CHART_FILE"
+          ./yq -i '.appVersion = strenv(VERSION)' "$CHART_FILE"
+
+      - name: Run chart-releaser
+        uses: helm/chart-releaser-action@v1.7.0
+        with:
+          charts_dir: ${{ inputs.charts_dir }}
+        env:
+          CR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CR_RELEASE_NAME_TEMPLATE: ${{ inputs.release_name_template }}

@@ -1,0 +1,84 @@
+name: Reusable Django CI
+
+on:
+  workflow_call:
+    inputs:
+      postgres_database:
+        description: PostgreSQL database used by the test job
+        required: true
+        type: string
+      postgres_image:
+        description: PostgreSQL service image
+        required: false
+        default: postgis/postgis:16-3.4
+        type: string
+      install_gdal:
+        description: Install GDAL and GEOS packages before testing
+        required: false
+        default: true
+        type: boolean
+      python_version:
+        required: false
+        default: "3.13"
+        type: string
+      uv_version:
+        required: false
+        default: "0.9.22"
+        type: string
+
+jobs:
+  lint:
+    name: Lint (tox -e lint)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          version: ${{ inputs.uv_version }}
+          enable-cache: true
+          python-version: ${{ inputs.python_version }}
+      - name: Run lint
+        run: uv run --locked --no-default-groups --group test tox -e lint
+
+  test:
+    name: Tests (tox)
+    runs-on: ubuntu-latest
+    services:
+      db:
+        image: ${{ inputs.postgres_image }}
+        ports:
+          - 5432:5432
+        env:
+          POSTGRES_DB: ${{ inputs.postgres_database }}
+          POSTGRES_USER: myuser
+          POSTGRES_PASSWORD: mypassword
+        options: >-
+          --health-cmd="pg_isready -U myuser -d ${{ inputs.postgres_database }}"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+    env:
+      POSTGRES_DB: ${{ inputs.postgres_database }}
+      POSTGRES_USER: myuser
+      POSTGRES_PASSWORD: mypassword
+      POSTGRES_HOST: 127.0.0.1
+      POSTGRES_PORT: "5432"
+      DJANGO_SECRET_KEY: ci-secret-key
+      DJANGO_DEBUG: "0"
+      DJANGO_ALLOWED_HOSTS: localhost,127.0.0.1
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          version: ${{ inputs.uv_version }}
+          enable-cache: true
+          python-version: ${{ inputs.python_version }}
+      - name: Install GDAL and GEOS
+        if: ${{ inputs.install_gdal }}
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gdal-bin libgdal-dev
+      - name: Run migrations
+        run: uv run --locked --no-default-groups python manage.py migrate --noinput
+      - name: Run tests
+        run: uv run --locked --no-default-groups --group test tox -e py313

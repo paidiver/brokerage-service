@@ -1,0 +1,32 @@
+name: Reusable Docker build
+
+on:
+  workflow_call:
+    inputs:
+      dockerfile:
+        description: Path to the Dockerfile
+        required: false
+        default: docker/Dockerfile
+        type: string
+      context:
+        description: Docker build context
+        required: false
+        default: .
+        type: string
+
+jobs:
+  build:
+    name: Build Docker image
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Build Docker image
+        run: >-
+          docker build
+          -t "ghcr.io/${{ github.repository }}:${{ github.sha }}"
+          -f "${{ inputs.dockerfile }}"
+          "${{ inputs.context }}"

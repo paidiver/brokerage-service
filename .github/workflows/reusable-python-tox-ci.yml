@@ -1,0 +1,38 @@
+name: Reusable Python tox CI
+
+on:
+  workflow_call:
+    inputs:
+      environments:
+        description: JSON array of tox environments
+        required: false
+        default: '["lint", "py313"]'
+        type: string
+      python_version:
+        required: false
+        default: "3.13"
+        type: string
+      uv_version:
+        required: false
+        default: "0.9.22"
+        type: string
+
+jobs:
+  checks:
+    name: ${{ matrix.environment }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        environment: ${{ fromJSON(inputs.environments) }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: astral-sh/setup-uv@v6
+        with:
+          version: ${{ inputs.uv_version }}
+          enable-cache: true
+          python-version: ${{ inputs.python_version }}
+      - name: Run checks
+        run: uv run --locked --no-default-groups --group test tox -e "${{ matrix.environment }}"
