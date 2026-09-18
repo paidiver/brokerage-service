@@ -1,0 +1,32 @@
+# Repository Documentation Configuration
+# This file defines which repositories to fetch documentation from
+repositories:
+  - path: paidiver/brokerage-service-api
+    name: brokerage-service-api
+    title: Brokerage Service API
+    branch: main
+    source: github
+
+  - path: paidiver/paidiverpy
+    name: paidiverpy
+    title: Paidiverpy
+    branch: dev
+    source: github
+
+  - path: paidiver/brokerage-service-ui
+    name: brokerage-service-ui
+    title: Brokerage Service UI
+    branch: main
+    source: github
+
+  - path: paidiver/annotations-api
+    name: annotations-api
+    title: Annotations API
+    branch: main
+    source: github
+
+  - path: paidiver/worms-cache
+    name: worms-cache
+    title: WoRMS Cache
+    branch: main
+    source: github

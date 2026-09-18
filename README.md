@@ -1,18 +1,46 @@
-# Brokerage Service shared automation
+# Paidiver Image Brokerage Service documentation
 
-This repository hosts reusable GitHub Actions workflows for the Paidiver
-services. Callers reference workflows from `.github/workflows` using:
+This repository provides the Sphinx documentation portal for the Paidiver image-annotation ecosystem and hosts its reusable GitHub Actions workflows.
 
-```yaml
-jobs:
-  build:
-    uses: paidiver/brokerage-service/.github/workflows/reusable-docker-build.yml@main
+The portal combines original cross-service guides with Markdown imported from the public repositories listed in [`repos.yaml`](repos.yaml). For each repository, it imports:
+
+* Markdown files in the repository root, including `README.md`.
+* Every Markdown file below `docs/`.
+* Every Markdown file below `deployment/`.
+
+## Documentation content
+
+The hand-written guides cover:
+
+* Platform architecture and related resources.
+* Repositories, APIs, example sites, database documentation, images, and Helm repositories.
+* Local deployment of WoRMS Cache and an independently managed Annotations API.
+* Taxonomy, imagery, and annotation ingestion.
+* Registering a new Annotations API as a brokerage source.
+* Reusing the shared GitHub Actions workflows.
+
+## Build locally
+
+```bash
+python -m venv .venv
+source .venv/bin/activate
+python -m pip install -r requirements.txt
+make html-with-repos
+python -m http.server --directory build/html 8000
 ```
 
-Available workflows cover Docker builds and pushes, Helm linting and releases,
-Django/tox CI, generic tox matrices, and SchemaSpy database documentation.
+Open <http://localhost:8000>.
 
-If this repository is private, enable access under **Settings → Actions →
-General → Access** so the other repositories in the `paidiver` organization can
-call these workflows. Once the workflows are stable, create a release tag and
-pin callers to that tag instead of `main`.
+Use `make html` when editing only local pages and `make html-with-repos` when you also want a fresh copy of related-repository documentation.
+
+## GitHub Pages
+
+The `docs.yml` workflow builds every pull request and deploys the `main` branch through GitHub Pages. Configure the repository's Pages source as **GitHub Actions**.
+
+## Reusable automation
+
+Reusable workflows live in [`.github/workflows`](.github/workflows). See the [reusable CI guide](source/reusable-ci.md) for the workflow catalogue, permissions, inputs, and a caller example.
+
+## Configuration
+
+Edit [`repos.yaml`](repos.yaml) to add, remove, or rename a public GitHub repository. Categories are intentionally not used; every repository appears directly under the repository documentation section.

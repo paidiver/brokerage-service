@@ -1,0 +1,9 @@
+.env
+.env.staging
+.env.production
+.venv/
+build/
+source/repos/
+__pycache__/
+*.py[cod]
+node_modules/
