@@ -1,6 +1,8 @@
 # Ingest data
 
-Populate taxonomy before importing annotation labels that refer to AphiaIDs. Then create an Annotations API user/token and ingest imagery and annotations.
+These instructions apply to the provided Annotations API and WoRMS Cache stack. A custom contract implementation owns its own storage and ingestion process; only its public responses need to satisfy the [API contract](api-contract).
+
+For the provided stack, populate taxonomy before importing annotation labels that refer to AphiaIDs. Then create an Annotations API user/token and ingest imagery and annotations.
 
 ## 1. Populate WoRMS Cache
 

@@ -52,4 +52,4 @@ repositories:
     source: github
 ```
 
-The importer copies root Markdown and Markdown below `docs/` and `deployment/`. Other repository files remain linked to their source on GitHub.
+The importer copies only `README.md` or `README.rst` from the repository root, plus every Markdown file below `docs/` and `deployment/`. Other repository files remain linked to their source on GitHub.

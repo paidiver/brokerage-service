@@ -4,7 +4,7 @@ This repository provides the Sphinx documentation portal for the Paidiver image-
 
 The portal combines original cross-service guides with Markdown imported from the public repositories listed in [`repos.yaml`](repos.yaml). For each repository, it imports:
 
-* Markdown files in the repository root, including `README.md`.
+* `README.md` or `README.rst` from the repository root.
 * Every Markdown file below `docs/`.
 * Every Markdown file below `deployment/`.
 
@@ -13,6 +13,8 @@ The portal combines original cross-service guides with Markdown imported from th
 The hand-written guides cover:
 
 * Platform architecture and related resources.
+* Two integration paths: a custom contract-compatible API or the provided data stack.
+* A downloadable OpenAPI contract for custom annotation sources.
 * Repositories, APIs, example sites, database documentation, images, and Helm repositories.
 * Local deployment of WoRMS Cache and an independently managed Annotations API.
 * Taxonomy, imagery, and annotation ingestion.

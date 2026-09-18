@@ -1,6 +1,8 @@
-# Deploy a local annotation source
+# Deploy the provided annotation stack
 
-This guide provides two paths. Use the complete demonstration stack to explore everything quickly, or run one Annotations API with one WoRMS Cache when preparing a source that you control.
+This guide is for providers who do not already have a database/API or who prefer the Paidiver reference implementation. If you are adapting an existing database, implement the [API contract](api-contract) instead.
+
+Use the complete demonstration stack to explore everything quickly, or run one Annotations API with one WoRMS Cache when preparing a source that you control.
 
 ## Prerequisites
 

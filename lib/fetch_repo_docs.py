@@ -50,11 +50,11 @@ def repository_tree(repository: dict[str, str]) -> list[dict]:
 
 
 def selected_markdown(path: str) -> bool:
-    """Select root Markdown and Markdown below docs/ or deployment/."""
+    """Select a root README and Markdown below docs/ or deployment/."""
     source = PurePosixPath(path)
-    if source.suffix.lower() != ".md":
-        return False
-    return len(source.parts) == 1 or source.parts[0].lower() in {"docs", "deployment"}
+    if len(source.parts) == 1:
+        return source.name.lower() in {"readme.md", "readme.rst"}
+    return source.suffix.lower() == ".md" and source.parts[0].lower() in {"docs", "deployment"}
 
 
 def raw_url(repository: dict[str, str], path: str) -> str:
@@ -127,7 +127,7 @@ def page_title(path: str) -> str:
 
 def write_repository_index(repository: dict[str, str], paths: list[str], destination: Path) -> None:
     """Create navigation for one imported repository."""
-    readme = "README.md" if "README.md" in paths else None
+    readme = next((path for path in paths if path.lower() in {"readme.md", "readme.rst"}), None)
     other_paths = [path for path in paths if path != readme]
     lines = [repository["title"], "=" * len(repository["title"]), ""]
     lines.extend([
@@ -139,7 +139,7 @@ def write_repository_index(repository: dict[str, str], paths: list[str], destina
         "",
     ])
     if readme:
-        lines.append("   README")
+        lines.append(f"   {PurePosixPath(readme).with_suffix('').as_posix()}")
     lines.extend(f"   {PurePosixPath(path).with_suffix('').as_posix()}" for path in other_paths)
     lines.append("")
     (destination / "index.rst").write_text("\n".join(lines), encoding="utf-8")

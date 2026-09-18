@@ -1,0 +1,107 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Paidiver Brokerage Annotation Source Contract",
+    "version": "1.0.0",
+    "description": "Minimum HTTP contract implemented by an annotation source consumed by the Paidiver Brokerage Service. Extra response fields are allowed."
+  },
+  "servers": [{"url": "https://annotations.example.org/api"}],
+  "paths": {
+    "/health/": {
+      "get": {
+        "operationId": "health",
+        "responses": {"200": {"description": "Source is available", "content": {"application/json": {"schema": {"type": "object", "additionalProperties": true}}}}}
+      }
+    },
+    "/annotations/search/": {
+      "get": {
+        "operationId": "searchAnnotations",
+        "parameters": [
+          {"$ref": "#/components/parameters/Page"}, {"$ref": "#/components/parameters/PageSize"},
+          {"name": "name_part", "in": "query", "schema": {"type": "string", "minLength": 3}},
+          {"name": "aphia_ids[]", "in": "query", "style": "form", "explode": true, "schema": {"type": "array", "items": {"type": "integer"}}},
+          {"name": "order_by", "in": "query", "schema": {"type": "string", "enum": ["label_aphia_id", "annotation_creation_datetime", "label_name"]}},
+          {"name": "include_descendants", "in": "query", "schema": {"type": "boolean"}},
+          {"name": "add_summary", "in": "query", "schema": {"type": "boolean"}},
+          {"name": "add_info", "in": "query", "schema": {"type": "boolean"}},
+          {"name": "disable_pagination", "in": "query", "schema": {"type": "boolean"}},
+          {"name": "image_set_name", "in": "query", "schema": {"type": "string"}},
+          {"name": "project", "in": "query", "schema": {"type": "string"}},
+          {"name": "platform", "in": "query", "schema": {"type": "string"}},
+          {"name": "deployment", "in": "query", "schema": {"type": "string"}},
+          {"name": "fauna_attraction", "in": "query", "schema": {"type": "string"}},
+          {"name": "marine_zone", "in": "query", "schema": {"type": "string"}},
+          {"name": "min_lat", "in": "query", "schema": {"type": "number", "minimum": -90, "maximum": 90}},
+          {"name": "max_lat", "in": "query", "schema": {"type": "number", "minimum": -90, "maximum": 90}},
+          {"name": "min_lon", "in": "query", "schema": {"type": "number", "minimum": -180, "maximum": 180}},
+          {"name": "max_lon", "in": "query", "schema": {"type": "number", "minimum": -180, "maximum": 180}}
+        ],
+        "responses": {"200": {"description": "Paginated search rows", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/SearchPage"}}}}}
+      }
+    },
+    "/annotations/search/grouped/": {
+      "get": {
+        "operationId": "searchAnnotationsGrouped",
+        "parameters": [{"$ref": "#/components/parameters/Page"}, {"$ref": "#/components/parameters/PageSize"}],
+        "responses": {"200": {"description": "Search rows grouped by annotation set", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/GroupedSearchPage"}}}}}
+      }
+    },
+    "/annotations/search/export/": {
+      "get": {
+        "operationId": "exportAnnotations",
+        "responses": {"200": {"description": "Export data", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/AnnotationExport"}}}}}
+      }
+    },
+    "/taxonomy/worms/taxa/": {
+      "get": {
+        "operationId": "searchTaxa",
+        "parameters": [{"name": "name_part", "in": "query", "required": true, "schema": {"type": "string"}}, {"name": "combine_vernaculars", "in": "query", "schema": {"type": "boolean"}}],
+        "responses": {"200": {"description": "Matching taxa", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/TaxonPage"}}}}}
+      }
+    },
+    "/images/image_sets/": {"get": {"operationId": "listImageSets", "parameters": [{"$ref": "#/components/parameters/Page"}, {"$ref": "#/components/parameters/PageSize"}], "responses": {"200": {"$ref": "#/components/responses/ImageSetPage"}}}},
+    "/images/image_sets/{id}/": {"get": {"operationId": "getImageSet", "parameters": [{"$ref": "#/components/parameters/Id"}], "responses": {"200": {"$ref": "#/components/responses/ImageSetDetail"}}}},
+    "/images/images/": {"get": {"operationId": "listImages", "parameters": [{"$ref": "#/components/parameters/Page"}, {"$ref": "#/components/parameters/PageSize"}], "responses": {"200": {"$ref": "#/components/responses/ImagePage"}}}},
+    "/images/images/{id}/": {"get": {"operationId": "getImage", "parameters": [{"$ref": "#/components/parameters/Id"}], "responses": {"200": {"$ref": "#/components/responses/ImageDetail"}}}},
+    "/annotations/annotation_sets/": {"get": {"operationId": "listAnnotationSets", "parameters": [{"$ref": "#/components/parameters/Page"}, {"$ref": "#/components/parameters/PageSize"}], "responses": {"200": {"$ref": "#/components/responses/AnnotationSetPage"}}}},
+    "/annotations/annotation_sets/{id}/": {"get": {"operationId": "getAnnotationSet", "parameters": [{"$ref": "#/components/parameters/Id"}], "responses": {"200": {"$ref": "#/components/responses/AnnotationSetDetail"}}}},
+    "/annotations/annotations/": {"get": {"operationId": "listAnnotations", "parameters": [{"$ref": "#/components/parameters/Page"}, {"$ref": "#/components/parameters/PageSize"}], "responses": {"200": {"$ref": "#/components/responses/AnnotationPage"}}}},
+    "/annotations/annotations/{id}/": {"get": {"operationId": "getAnnotation", "parameters": [{"$ref": "#/components/parameters/Id"}], "responses": {"200": {"$ref": "#/components/responses/AnnotationDetail"}}}},
+    "/labels/labels/": {"get": {"operationId": "listLabels", "parameters": [{"$ref": "#/components/parameters/Page"}, {"$ref": "#/components/parameters/PageSize"}], "responses": {"200": {"$ref": "#/components/responses/LabelPage"}}}},
+    "/labels/labels/{id}/": {"get": {"operationId": "getLabel", "parameters": [{"$ref": "#/components/parameters/Id"}], "responses": {"200": {"$ref": "#/components/responses/LabelDetail"}}}}
+  },
+  "components": {
+    "parameters": {
+      "Id": {"name": "id", "in": "path", "required": true, "schema": {"type": "string", "format": "uuid"}},
+      "Page": {"name": "page", "in": "query", "schema": {"type": "integer", "minimum": 1}},
+      "PageSize": {"name": "page_size", "in": "query", "schema": {"type": "integer", "minimum": 1, "maximum": 500}}
+    },
+    "responses": {
+      "ImageSetPage": {"description": "Image sets", "content": {"application/json": {"schema": {"allOf": [{"$ref": "#/components/schemas/Page"}, {"properties": {"results": {"type": "array", "items": {"$ref": "#/components/schemas/ImageSet"}}}}]}}}},
+      "ImageSetDetail": {"description": "Image set", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ImageSet"}}}},
+      "ImagePage": {"description": "Images", "content": {"application/json": {"schema": {"allOf": [{"$ref": "#/components/schemas/Page"}, {"properties": {"results": {"type": "array", "items": {"$ref": "#/components/schemas/Image"}}}}]}}}},
+      "ImageDetail": {"description": "Image", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Image"}}}},
+      "AnnotationSetPage": {"description": "Annotation sets", "content": {"application/json": {"schema": {"allOf": [{"$ref": "#/components/schemas/Page"}, {"properties": {"results": {"type": "array", "items": {"$ref": "#/components/schemas/AnnotationSet"}}}}]}}}},
+      "AnnotationSetDetail": {"description": "Annotation set", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/AnnotationSet"}}}},
+      "AnnotationPage": {"description": "Annotations", "content": {"application/json": {"schema": {"allOf": [{"$ref": "#/components/schemas/Page"}, {"properties": {"results": {"type": "array", "items": {"$ref": "#/components/schemas/Annotation"}}}}]}}}},
+      "AnnotationDetail": {"description": "Annotation", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Annotation"}}}},
+      "LabelPage": {"description": "Labels", "content": {"application/json": {"schema": {"allOf": [{"$ref": "#/components/schemas/Page"}, {"properties": {"results": {"type": "array", "items": {"$ref": "#/components/schemas/Label"}}}}]}}}},
+      "LabelDetail": {"description": "Label", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Label"}}}}
+    },
+    "schemas": {
+      "Page": {"type": "object", "required": ["count", "next", "previous", "results"], "properties": {"count": {"type": "integer"}, "next": {"type": "string", "nullable": true}, "previous": {"type": "string", "nullable": true}, "results": {"type": "array", "items": {}}}, "additionalProperties": true},
+      "SearchResult": {"type": "object", "required": ["uuid", "creation_datetime", "annotation_set_uuid", "annotation_set_name", "image_set_name", "image_set_uuid", "image_filename", "image_uuid", "label_name", "annotation_shape", "annotation_coordinates"], "properties": {"uuid": {"type": "string", "format": "uuid"}, "creation_datetime": {"type": "string", "format": "date-time"}, "annotation_set_uuid": {"type": "string", "format": "uuid"}, "annotation_set_name": {"type": "string"}, "image_set_name": {"type": "string"}, "image_set_uuid": {"type": "string", "format": "uuid"}, "image_filename": {"type": "string"}, "image_uuid": {"type": "string", "format": "uuid"}, "label_name": {"type": "string"}, "label_aphia_id": {"type": "integer", "nullable": true}, "annotation_platform": {"type": "string", "nullable": true}, "annotation_shape": {"type": "string"}, "annotation_coordinates": {"type": "array", "items": {}}, "annotation_dimension_pixels": {"type": "number", "nullable": true}, "annotator_name": {"type": "string", "nullable": true}}, "additionalProperties": true},
+      "SearchPage": {"allOf": [{"$ref": "#/components/schemas/Page"}, {"type": "object", "required": ["meta"], "properties": {"results": {"type": "array", "items": {"$ref": "#/components/schemas/SearchResult"}}, "meta": {"type": "object", "additionalProperties": true}}}]},
+      "GroupedSearchRow": {"type": "object", "required": ["annotation_set_uuid", "annotations"], "properties": {"annotation_set_uuid": {"type": "string", "format": "uuid"}, "annotations": {"type": "array", "items": {"$ref": "#/components/schemas/SearchResult"}}}, "additionalProperties": true},
+      "GroupedSearchPage": {"allOf": [{"$ref": "#/components/schemas/Page"}, {"type": "object", "required": ["meta"], "properties": {"results": {"type": "array", "items": {"$ref": "#/components/schemas/GroupedSearchRow"}}, "meta": {"type": "object", "additionalProperties": true}}}]},
+      "Taxon": {"type": "object", "required": ["AphiaID", "scientificname"], "properties": {"AphiaID": {"type": "integer"}, "scientificname": {"type": "string"}, "rank": {"type": "string", "nullable": true}, "status": {"type": "string", "nullable": true}, "valid_AphiaID": {"type": "integer", "nullable": true}, "valid_name": {"type": "string", "nullable": true}, "parent_AphiaID": {"type": "integer", "nullable": true}}, "additionalProperties": true},
+      "TaxonPage": {"allOf": [{"$ref": "#/components/schemas/Page"}, {"properties": {"results": {"type": "array", "items": {"$ref": "#/components/schemas/Taxon"}}}}]},
+      "ImageSet": {"type": "object", "required": ["id", "name"], "properties": {"id": {"type": "string", "format": "uuid"}, "name": {"type": "string"}}, "additionalProperties": true},
+      "Image": {"type": "object", "required": ["id", "filename"], "properties": {"id": {"type": "string", "format": "uuid"}, "filename": {"type": "string"}}, "additionalProperties": true},
+      "AnnotationSet": {"type": "object", "required": ["id", "name"], "properties": {"id": {"type": "string", "format": "uuid"}, "name": {"type": "string"}}, "additionalProperties": true},
+      "Annotation": {"type": "object", "required": ["id", "image_id", "shape", "coordinates", "annotation_set_id"], "properties": {"id": {"type": "string", "format": "uuid"}, "image_id": {"type": "string", "format": "uuid"}, "shape": {"type": "string"}, "coordinates": {}, "annotation_set_id": {"type": "string", "format": "uuid"}, "annotation_platform": {"type": "string", "nullable": true}, "dimension_pixels": {"type": "number", "nullable": true}}, "additionalProperties": true},
+      "Label": {"type": "object", "required": ["id", "name", "parent_label_name", "annotation_set_id"], "properties": {"id": {"type": "string", "format": "uuid"}, "name": {"type": "string"}, "parent_label_name": {"type": "string"}, "annotation_set_id": {"type": "string", "format": "uuid"}, "lowest_taxonomic_name": {"type": "string", "nullable": true}, "lowest_aphia_id": {"type": "integer", "nullable": true}}, "additionalProperties": true},
+      "AnnotationExport": {"type": "object", "required": ["annotations", "images", "annotation_sets", "image_sets"], "properties": {"annotations": {"type": "array", "items": {"type": "object"}}, "images": {"type": "array", "items": {"type": "object"}}, "annotation_sets": {"type": "array", "items": {"type": "object"}}, "image_sets": {"type": "array", "items": {"type": "object"}}}, "additionalProperties": true}
+    }
+  }
+}

@@ -1,12 +1,12 @@
 # Register an annotation source
 
-The current Brokerage Service API uses version-controlled source configuration. Adding a source therefore requires a small code change and a brokerage deployment. The source API remains independently hosted.
+The current Brokerage Service API uses version-controlled source configuration. Adding a source therefore requires a small code change and a brokerage deployment. The source API remains independently hosted and may be either a custom [contract implementation](api-contract) or the provided Annotations API stack.
 
 ## Requirements for a source
 
 Before registration, the source should:
 
-* Implement the Annotations API v1 contract.
+* Implement the machine-readable [Annotations Source API contract](api-contract).
 * Expose a reachable `/api/health/` endpoint.
 * Support the search ordering and pagination contract documented by the Brokerage Service API.
 * Use HTTPS and a stable base URL in deployed environments.
